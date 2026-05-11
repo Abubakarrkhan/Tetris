@@ -73,17 +73,162 @@ void displayCredit(sf::RenderWindow& window, sf::Music& backgroundmusic)// when 
     
 }
 
+
+void drawInfoCard(sf::RenderWindow& window,float x, float y, float w, float h,const std::string& label, const std::string& value,sf::Font& font)
+{
+    // Card background
+    sf::RectangleShape card(sf::Vector2f(w, h));
+    card.setPosition(x, y);
+    card.setFillColor(sf::Color(30, 30, 50, 220));
+    card.setOutlineThickness(2.f);
+    card.setOutlineColor(sf::Color(80, 80, 160, 200));
+    window.draw(card);
+
+    // Accent top bar
+    sf::RectangleShape accent(sf::Vector2f(w, 4.f));
+    accent.setPosition(x, y);
+    accent.setFillColor(sf::Color(120, 90, 220));
+    window.draw(accent);
+
+    // Label text
+    sf::Text lbl;
+    lbl.setFont(font);
+    lbl.setString(label);
+    lbl.setCharacterSize(13);
+    lbl.setFillColor(sf::Color(160, 140, 255));
+    lbl.setStyle(sf::Text::Bold);
+    lbl.setPosition(x + 12.f, y + 10.f);
+    window.draw(lbl);
+
+    // Value text
+    sf::Text val;
+    val.setFont(font);
+    val.setString(value);
+    val.setCharacterSize(26);
+    val.setFillColor(sf::Color(240, 240, 255));
+    val.setStyle(sf::Text::Bold);
+    val.setPosition(x + 12.f, y + 30.f);
+    window.draw(val);
+}
+
+
+void drawNextPiecePanel(sf::RenderWindow& window,Tetrimino* nextTetris,sf::Font& font,float panelX, float panelY, float panelW, float panelH)
+{
+    // Panel background
+    sf::RectangleShape panel(sf::Vector2f(panelW, panelH));
+    panel.setPosition(panelX, panelY);
+    panel.setFillColor(sf::Color(20, 20, 45, 230));
+    panel.setOutlineThickness(2.f);
+    panel.setOutlineColor(sf::Color(80, 80, 160, 200));
+    window.draw(panel);
+
+    // Accent bar
+    sf::RectangleShape accent(sf::Vector2f(panelW, 4.f));
+    accent.setPosition(panelX, panelY);
+    accent.setFillColor(sf::Color(80, 200, 200));
+    window.draw(accent);
+
+    // "NEXT" label
+    sf::Text nextLabel;
+    nextLabel.setFont(font);
+    nextLabel.setString("NEXT");
+    nextLabel.setCharacterSize(13);
+    nextLabel.setFillColor(sf::Color(80, 220, 220));
+    nextLabel.setStyle(sf::Text::Bold);
+    nextLabel.setPosition(panelX + 12.f, panelY + 10.f);
+    window.draw(nextLabel);
+
+    if (!nextTetris) return;
+
+    // Find bounding box of the next piece to centre it in the preview panel
+    float minX = 1e9f, minY = 1e9f, maxX = -1e9f, maxY = -1e9f;
+    int count = nextTetris->getBlocksCount();
+    for (int i = 0; i < count; i++)
+    {
+        float bx = (float)nextTetris->getTetrisPiecePosX(i);
+        float by = (float)nextTetris->getTetrisPiecePosY(i);
+        if (bx < minX) minX = bx;
+        if (by < minY) minY = by;
+        if (bx > maxX) maxX = bx;
+        if (by > maxY) maxY = by;
+    }
+    float pieceW = maxX - minX + 40.f;  // 40 = block size
+    float pieceH = maxY - minY + 40.f;
+
+    float previewAreaTop = panelY + 35.f;
+    float previewAreaH   = panelH - 40.f;
+    float offsetX = panelX + (panelW - pieceW) * 0.5f - minX;
+    float offsetY = previewAreaTop + (previewAreaH - pieceH) * 0.5f - minY;
+
+    for (int i = 0; i < count; i++)
+    {
+        sf::Sprite s = nextTetris->getSprite(i);          // copy sprite
+        float origX = (float)nextTetris->getTetrisPiecePosX(i);
+        float origY = (float)nextTetris->getTetrisPiecePosY(i);
+        s.setPosition(origX + offsetX, origY + offsetY);
+        window.draw(s);
+    }
+}
+
+
+void drawControls(sf::RenderWindow& window, sf::Font& font,float x, float y, float w)
+{
+    sf::RectangleShape bg(sf::Vector2f(w, 148.f));
+    bg.setPosition(x, y);
+    bg.setFillColor(sf::Color(20, 20, 45, 210));
+    bg.setOutlineThickness(2.f);
+    bg.setOutlineColor(sf::Color(80, 80, 160, 200));
+    window.draw(bg);
+
+    sf::RectangleShape accent(sf::Vector2f(w, 4.f));
+    accent.setPosition(x, y);
+    accent.setFillColor(sf::Color(220, 120, 60));
+    window.draw(accent);
+
+    struct ControlEntry { const char* key; const char* action; };
+    ControlEntry controls[] = {
+        { "<  >", "Move Left / Right" },
+        { "  v  ", "Move Down"  },
+        { "  ^  ", "Rotate" }
+    };
+
+    for (int i = 0; i < 3 ;i++)
+    {
+        // Key badge
+        sf::RectangleShape badge(sf::Vector2f(46.f, 22.f));
+        badge.setPosition(x + 10.f, y + 14.f + i * 30.f);
+        badge.setFillColor(sf::Color(60, 60, 100));
+        badge.setOutlineThickness(1.f);
+        badge.setOutlineColor(sf::Color(120, 120, 200));
+        window.draw(badge);
+
+        sf::Text keyTxt;
+        keyTxt.setFont(font);
+        keyTxt.setString(controls[i].key);
+        keyTxt.setCharacterSize(11);
+        keyTxt.setFillColor(sf::Color(220, 220, 255));
+        keyTxt.setPosition(x + 13.f, y + 17.f + i * 30.f);
+        window.draw(keyTxt);
+
+        sf::Text actTxt;
+        actTxt.setFont(font);
+        actTxt.setString(controls[i].action);
+        actTxt.setCharacterSize(11);
+        actTxt.setFillColor(sf::Color(180, 180, 220));
+        actTxt.setPosition(x + 62.f, y + 17.f + i * 30.f);
+        window.draw(actTxt);
+    }
+}
+
 int main()
 {
     sf::Music backgroundmusic;
     backgroundmusic.openFromFile("backgroundmusic.ogg");
     backgroundmusic.play();
     // Create a window to display the game
-    sf::RenderWindow window(sf::VideoMode(800, 800), "Tetris Powered by Unity (Made on Unreal Engine)");
+    sf::RenderWindow window(sf::VideoMode(800, 800), "Tetris");
     GameBoard G;
     G.BackgroundSet();
-
-
 
     sf::Font font;
     font.loadFromFile("arial.ttf");
@@ -107,6 +252,14 @@ int main()
     srand(time(0)); 
     spawnNewTetris(tetris);
 
+    Tetrimino* nextTetris = nullptr;
+    spawnNewTetris(nextTetris);
+
+    const float SB_X = 410.f;   // sidebar left edge (10px gap after board)
+    const float SB_W = 375.f;   // sidebar width
+    const float CARD_W = SB_W;
+    const float CARD_H = 72.f;
+
     // Game timing variables
     sf::Clock clock;
     float DownMovementTimer;// a timer that at what rate the tetris move down 
@@ -116,9 +269,9 @@ int main()
     while (window.isOpen())
     {
   
-        text1.setString("Current Level : " + std::to_string(G.getCurrentLevel()+1));
-        text2.setString("Score : " + std::to_string(G.getscore()));
-        text3.setString("Lines Cleared : " + std::to_string(G.getlines()));
+        //text1.setString("Current Level : " + std::to_string(G.getCurrentLevel()+1));
+        //text2.setString("Score : " + std::to_string(G.getscore()));
+        //text3.setString("Lines Cleared : " + std::to_string(G.getlines()));
 
 
         DownMovementTimer = 1.0f - ((float)G.getCurrentLevel() * 0.1f);// depending upon subtract 0.1 from it is 1 - (level * 0.1)
@@ -160,7 +313,7 @@ int main()
                     if (G.GameBoardRotationMovementCheck(tetris))// if no tetris piece places
                     {
                         tetris->rotate();
-                        
+
                     }
                       
                 }  
@@ -192,6 +345,46 @@ int main()
                 window.draw(G.getSprite(i, j));
             }
 
+        sf::RectangleShape sidebar(sf::Vector2f(390.f, 800.f));
+        sidebar.setPosition(400.f, 0.f);
+        sidebar.setFillColor(sf::Color(12, 12, 28));
+        window.draw(sidebar);
+
+        // Thin divider line between board and sidebar
+        sf::RectangleShape divider(sf::Vector2f(2.f, 800.f));
+        divider.setPosition(400.f, 0.f);
+        divider.setFillColor(sf::Color(70, 60, 140));
+        window.draw(divider);
+
+        // TITLE 
+        sf::Text title;
+        title.setFont(font);
+        title.setString("TETRIS");
+        title.setCharacterSize(42);
+        title.setStyle(sf::Text::Bold);
+        title.setFillColor(sf::Color(160, 120, 255));
+        // Centre the title in the sidebar
+        sf::FloatRect tb = title.getLocalBounds();
+        title.setPosition(SB_X + (SB_W - tb.width) * 0.5f - tb.left, 18.f);
+        window.draw(title);
+
+        // Decorative line under title
+        sf::RectangleShape titleLine(sf::Vector2f(SB_W - 20.f, 2.f));
+        titleLine.setPosition(SB_X + 10.f, 72.f);
+        titleLine.setFillColor(sf::Color(100, 70, 200, 180));
+        window.draw(titleLine);
+
+        drawNextPiecePanel(window, nextTetris, font,SB_X, 82.f, CARD_W, 140.f);
+
+        // info cards
+        drawInfoCard(window, SB_X, 240.f, CARD_W, CARD_H, "LEVEL",std::to_string(G.getCurrentLevel() + 1),font);
+        drawInfoCard(window, SB_X, 320.f, CARD_W, CARD_H,"SCORE",std::to_string(G.getscore()),font);
+        drawInfoCard(window, SB_X, 400.f, CARD_W, CARD_H,"LINES CLEARED",std::to_string(G.getlines()),font);
+
+        // ── control legend
+        drawControls(window, font, SB_X, 490.f, CARD_W);
+
+
         window.draw(text1);
         window.draw(text2);
         window.draw(text3);
@@ -209,14 +402,17 @@ int main()
             delete tetris;
             tetris = nullptr;
             G.LineClear();// check if ant line clear
-            spawnNewTetris(tetris);// spawn a new tetris
+
+            tetris = nextTetris;
+            nextTetris = nullptr;
+            spawnNewTetris(nextTetris);
             moveDown = true;
         }
 
         window.display();
     }
 
-    // Clean up the dynamically allocated Tetrimino
     delete tetris;
+    delete nextTetris;
     return 0;
 }
